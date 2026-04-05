@@ -50,28 +50,29 @@ export async function updateSession(request: NextRequest) {
   if (user) {
     const { data: userData, error: userError } = await supabase
       .from('users')
-      .select('aprovado')
+      .select('aprovado, papel')
       .eq('id', user.id)
       .single();
 
     // Se o utilizador não existir na tabela 'users' e não estiver numa página de auth
-    // Sign out e redirecionar para login
     if ((userError || !userData) && !isAuthPage) {
       await supabase.auth.signOut();
       const url = request.nextUrl.clone();
       url.pathname = "/login";
-      const response = NextResponse.redirect(url);
-      // Garantir que os cookies (incluindo o de sign out) são passados
-      supabaseResponse.cookies.getAll().forEach(cookie => {
-        response.cookies.set(cookie.name, cookie.value);
-      });
-      return response;
+      return NextResponse.redirect(url);
     }
 
     // Se NÃO estiver aprovado e NÃO estiver na página de pendente -> Redirecionar para pendente
     if (userData && !userData.aprovado && request.nextUrl.pathname !== "/pending-approval") {
       const url = request.nextUrl.clone();
       url.pathname = "/pending-approval";
+      return NextResponse.redirect(url);
+    }
+
+    // PROTEÇÃO DA ROTA ADMIN: Apenas papel 'admin' pode aceder
+    if (request.nextUrl.pathname.startsWith("/admin") && userData?.papel !== 'admin') {
+      const url = request.nextUrl.clone();
+      url.pathname = "/"; // Redireciona para a home se não for admin
       return NextResponse.redirect(url);
     }
 

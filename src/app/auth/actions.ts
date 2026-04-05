@@ -15,19 +15,7 @@ export async function login(formData: FormData) {
   const { error } = await supabase.auth.signInWithPassword(data)
 
   if (error) {
-    redirect('/login?error=Invalid login credentials')
-  }
-
-  // Check if user is approved
-  const { data: userData } = await supabase
-    .from('users')
-    .select('aprovado')
-    .eq('email', data.email)
-    .single()
-
-  if (userData && !userData.aprovado) {
-    await supabase.auth.signOut()
-    redirect('/pending-approval')
+    redirect('/login?error=Dados de acesso inválidos')
   }
 
   revalidatePath('/', 'layout')
@@ -75,4 +63,20 @@ export async function signout() {
   const supabase = createClient()
   await supabase.auth.signOut()
   redirect('/login')
+}
+
+export async function aprovarUser(id: string) {
+  const supabase = createClient()
+  const { error } = await supabase.from('users').update({ aprovado: true }).eq('id', id)
+  if (error) throw new Error('Erro ao aprovar utilizador')
+  revalidatePath('/admin')
+}
+
+export async function rejeitarUser(id: string) {
+  const supabase = createClient()
+  // No caso de rejeitar o user, eliminamos da base de dados (e opcionalmente do auth)
+  await supabase.from('users').delete().eq('id', id)
+  // Nota: Para apagar do Supabase Auth seria necessário usar a Service Role, o que não é recomendado em Client/Server simples.
+  // O user continuará no Auth mas sem perfil no DB, o que o bloqueia via middleware.
+  revalidatePath('/admin')
 }
