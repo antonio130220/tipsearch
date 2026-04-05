@@ -78,3 +78,9 @@ export async function rejeitarArtigo(id: string, filePath: string) {
   
   revalidatePath('/admin')
 }
+
+export async function getDownloadUrl(filePath: string) {
+  const supabase = createClient()
+  const { data } = await supabase.storage.from('artigos').createSignedUrl(filePath, 3600)
+  return data?.signedUrl
+}

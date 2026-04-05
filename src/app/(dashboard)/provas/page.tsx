@@ -107,7 +107,11 @@ export default async function ProvasPage({
       {provas && provas.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {provas.map((prova) => (
-            <div key={prova.id} className="group rounded-lg border bg-white p-6 hover:border-zinc-400 transition-all cursor-pointer shadow-sm">
+            <Link 
+              key={prova.id} 
+              href={`/provas/${prova.id}`}
+              className="group rounded-lg border bg-white p-6 hover:border-zinc-400 transition-all cursor-pointer shadow-sm"
+            >
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md border bg-zinc-50 text-zinc-600 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
                 <FileText className="h-5 w-5" />
               </div>
@@ -125,7 +129,7 @@ export default async function ProvasPage({
                   Universidade
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       ) : (

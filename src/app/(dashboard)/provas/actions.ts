@@ -89,3 +89,9 @@ export async function rejeitarProva(id: string, filePath: string) {
   
   revalidatePath('/admin')
 }
+
+export async function getDownloadUrl(filePath: string) {
+  const supabase = createClient()
+  const { data } = await supabase.storage.from('provas').createSignedUrl(filePath, 3600)
+  return data?.signedUrl
+}
