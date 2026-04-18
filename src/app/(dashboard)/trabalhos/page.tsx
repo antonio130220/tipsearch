@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, Filter, Search, Briefcase, GraduationCap, Book, Calendar } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { HoverGlow } from "@/components/ui/hover-glow";
 
 export default async function TrabalhosPage({
   searchParams,
@@ -102,43 +103,44 @@ export default async function TrabalhosPage({
       {trabalhos && trabalhos.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2">
           {trabalhos.map((trabalho) => (
-            <Link 
-              key={trabalho.id} 
-              href={`/trabalhos/${trabalho.id}`}
-              className="group rounded-xl border bg-white p-6 hover:border-zinc-400 transition-all shadow-sm"
-            >
-              <div className="flex flex-col h-full space-y-4">
-                <div className="flex items-start justify-between">
-                  <div className="h-10 w-10 rounded-lg bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all">
-                    <Briefcase className="h-5 w-5" />
+            <HoverGlow key={trabalho.id} color="indigo" className="h-full">
+              <Link 
+                href={`/trabalhos/${trabalho.id}`}
+                className="group block rounded-xl border bg-white p-6 transition-colors shadow-sm h-full hover:border-zinc-300"
+              >
+                <div className="flex flex-col h-full space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div className="h-10 w-10 rounded-lg bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all">
+                      <Briefcase className="h-5 w-5" />
+                    </div>
+                    <span className={cn(
+                      "px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider whitespace-nowrap",
+                      trabalho.tipo === 'TFC' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
+                    )}>
+                      {trabalho.tipo === 'TFC' ? 'TFC' : 'Curricular'}
+                    </span>
                   </div>
-                  <span className={cn(
-                    "px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider",
-                    trabalho.tipo === 'TFC' ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
-                  )}>
-                    {trabalho.tipo === 'TFC' ? 'TFC' : 'Curricular'}
-                  </span>
-                </div>
 
-                <div className="space-y-1 flex-1">
-                  <h3 className="font-bold text-zinc-900 group-hover:text-zinc-700 transition-colors line-clamp-2">
-                    {trabalho.titulo}
-                  </h3>
-                  <p className="text-sm text-zinc-500 line-clamp-1">{trabalho.disciplina}</p>
-                </div>
+                  <div className="space-y-1 flex-1 overflow-hidden">
+                    <h3 className="font-bold text-zinc-900 group-hover:text-zinc-700 transition-colors line-clamp-2 break-words">
+                      {trabalho.titulo}
+                    </h3>
+                    <p className="text-sm text-zinc-500 line-clamp-1 break-words">{trabalho.disciplina}</p>
+                  </div>
 
-                <div className="grid grid-cols-2 gap-4 pt-4 border-t border-zinc-50 text-[11px] text-zinc-500">
-                  <div className="flex items-center gap-1.5">
-                    <GraduationCap className="h-3.5 w-3.5" />
-                    <span className="truncate">{trabalho.curso}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5 justify-end">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {trabalho.ano_letivo}
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-zinc-50 text-[11px] text-zinc-500">
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      <GraduationCap className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{trabalho.curso}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 justify-end shrink-0">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {trabalho.ano_letivo}
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </HoverGlow>
           ))}
         </div>
       ) : (

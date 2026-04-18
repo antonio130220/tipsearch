@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, Filter, Search, BookOpen, Calendar, User, Tag } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { HoverGlow } from "@/components/ui/hover-glow";
 
 export default async function ArtigosPage({
   searchParams,
@@ -92,46 +93,47 @@ export default async function ArtigosPage({
       {artigos && artigos.length > 0 ? (
         <div className="grid gap-6">
           {artigos.map((artigo) => (
-            <Link 
-              key={artigo.id} 
-              href={`/artigos/${artigo.id}`}
-              className="group block rounded-xl border bg-white p-6 hover:border-zinc-400 transition-all shadow-sm"
-            >
-              <div className="flex flex-col gap-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="space-y-1">
-                    <span className="inline-block px-2 py-0.5 rounded bg-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-600">
-                      {artigo.area}
-                    </span>
-                    <h3 className="text-xl font-bold text-zinc-900 group-hover:text-zinc-700 transition-colors">
-                      {artigo.titulo}
-                    </h3>
+            <HoverGlow key={artigo.id} color="indigo">
+              <Link 
+                href={`/artigos/${artigo.id}`}
+                className="group block rounded-xl border bg-white p-6 transition-colors shadow-sm hover:border-zinc-300"
+              >
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="space-y-1 overflow-hidden">
+                      <span className="inline-block px-2 py-0.5 rounded bg-zinc-100 text-[10px] font-bold uppercase tracking-wider text-zinc-600 whitespace-nowrap">
+                        {artigo.area}
+                      </span>
+                      <h3 className="text-xl font-bold text-zinc-900 group-hover:text-zinc-700 transition-colors line-clamp-2 break-words">
+                        {artigo.titulo}
+                      </h3>
+                    </div>
+                    <div className="h-10 w-10 shrink-0 rounded-lg bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all">
+                      <BookOpen className="h-5 w-5" />
+                    </div>
                   </div>
-                  <div className="h-10 w-10 shrink-0 rounded-lg bg-zinc-50 flex items-center justify-center text-zinc-400 group-hover:bg-zinc-900 group-hover:text-white transition-all">
-                    <BookOpen className="h-5 w-5" />
+
+                  <p className="text-zinc-500 text-sm line-clamp-2 italic break-words">
+                    "{artigo.abstract}"
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-zinc-500 pt-2 border-t border-zinc-50">
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      <User className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{artigo.autores}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Calendar className="h-3.5 w-3.5" />
+                      {artigo.ano}
+                    </div>
+                    <div className="flex items-center gap-1.5 overflow-hidden">
+                      <Tag className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">{artigo.palavras_chave}</span>
+                    </div>
                   </div>
                 </div>
-
-                <p className="text-zinc-500 text-sm line-clamp-2 italic">
-                  "{artigo.abstract}"
-                </p>
-
-                <div className="flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-zinc-500 pt-2 border-t border-zinc-50">
-                  <div className="flex items-center gap-1.5">
-                    <User className="h-3.5 w-3.5" />
-                    {artigo.autores}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Calendar className="h-3.5 w-3.5" />
-                    {artigo.ano}
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Tag className="h-3.5 w-3.5" />
-                    {artigo.palavras_chave}
-                  </div>
-                </div>
-              </div>
-            </Link>
+              </Link>
+            </HoverGlow>
           ))}
         </div>
       ) : (

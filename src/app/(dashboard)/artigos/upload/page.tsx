@@ -3,13 +3,66 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { uploadArtigo } from "../actions"
-import { ArrowLeft, Upload, FileType } from "lucide-react"
+import { uploadArtigo, checkDuplicateArtigo } from "../actions"
+import { ArrowLeft, FileType, AlertCircle, ExternalLink, Search } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useRef } from "react"
+
+interface ArtigoMatch {
+  id: string;
+  titulo: string;
+  similarity: number;
+}
 
 export default function UploadArtigoPage() {
   const [loading, setLoading] = useState(false)
+  const [checkingSimilarity, setCheckingSimilarity] = useState(false)
+  const [exactDuplicate, setExactDuplicate] = useState<{id: string, titulo: string} | null>(null)
+  const [similarArtigos, setSimilarArtigos] = useState<ArtigoMatch[]>([])
+  const [formData, setFormData] = useState({ titulo: '', abstract: '' })
+  const formRef = useRef<HTMLFormElement>(null)
+
+  const checkSimilarity = async (titulo: string, abstract: string) => {
+    if (!titulo || !abstract || titulo.length < 5 || abstract.length < 10) return
+
+    setCheckingSimilarity(true)
+    try {
+      const res = await fetch('/api/check-similarity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, abstract })
+      })
+      const data = await res.json()
+      if (data.matches) {
+        setSimilarArtigos(data.matches)
+      }
+    } catch (err) {
+      console.error('Erro ao verificar similaridade:', err)
+    } finally {
+      setCheckingSimilarity(false)
+    }
+  }
+
+  const handleBlur = () => {
+    checkSimilarity(formData.titulo, formData.abstract)
+  }
+
+  const handlePreSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setLoading(true)
+
+    const existing = await checkDuplicateArtigo(formData.titulo)
+    if (existing && !exactDuplicate) {
+      setExactDuplicate(existing)
+      setLoading(false)
+      return
+    }
+
+    if (formRef.current) {
+      const data = new FormData(formRef.current)
+      await uploadArtigo(data)
+    }
+  }
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -25,15 +78,94 @@ export default function UploadArtigoPage() {
         </div>
       </header>
 
-      <form action={uploadArtigo} onSubmit={() => setLoading(true)} className="space-y-6 bg-white p-8 border rounded-xl shadow-sm">
+      {exactDuplicate && (
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex gap-4">
+          <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-amber-900">
+                Já existe um artigo com este título:
+              </p>
+              <p className="text-sm text-amber-800 italic">&quot;{exactDuplicate.titulo}&quot;</p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" size="sm" asChild className="bg-white border-amber-200 text-amber-900 hover:bg-amber-100">
+                <Link href={`/artigos/${exactDuplicate.id}`} target="_blank" className="flex items-center gap-2">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Ver existente
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setExactDuplicate(null)} className="text-amber-700 hover:bg-amber-100">
+                Cancelar
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+                onClick={() => {
+                  if (formRef.current) {
+                    setLoading(true)
+                    const data = new FormData(formRef.current)
+                    uploadArtigo(data)
+                  }
+                }}
+              >
+                Continuar mesmo assim
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {similarArtigos.length > 0 && !exactDuplicate && (
+        <div className="bg-zinc-50 border border-zinc-200 p-4 rounded-xl space-y-3">
+          <div className="flex items-center gap-2 text-zinc-900 font-semibold text-sm">
+            <Search className="h-4 w-4" />
+            Encontrámos artigos similares ao teu:
+          </div>
+          <div className="grid gap-2">
+            {similarArtigos.map((art) => (
+              <div key={art.id} className="flex items-center justify-between bg-white p-3 border rounded-lg text-sm">
+                <div className="truncate max-w-[70%]">
+                  <span className="font-medium text-zinc-900">{art.titulo}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-medium px-2 py-0.5 bg-zinc-100 text-zinc-600 rounded-full">
+                    {Math.round(art.similarity * 100)}% similar
+                  </span>
+                  <Link href={`/artigos/${art.id}`} target="_blank" className="text-zinc-400 hover:text-zinc-600">
+                    <ExternalLink className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-xs text-zinc-500">
+            Dica: Verifica se o teu conteúdo já não está disponível na plataforma.
+          </p>
+        </div>
+      )}
+
+      <form ref={formRef} onSubmit={handlePreSubmit} className="space-y-6 bg-white p-8 border rounded-xl shadow-sm">
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="titulo">Título do Artigo</Label>
-            <Input id="titulo" name="titulo" placeholder="Ex: Impacto da IA na Engenharia de Software" required />
+            <Input 
+              id="titulo" 
+              name="titulo" 
+              placeholder="Ex: Impacto da IA na Engenharia de Software" 
+              required 
+              value={formData.titulo}
+              onChange={(e) => setFormData(prev => ({ ...prev, titulo: e.target.value }))}
+              onBlur={handleBlur}
+            />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="abstract">Abstract (Resumo)</Label>
+            <div className="flex justify-between items-end">
+              <Label htmlFor="abstract">Abstract (Resumo)</Label>
+              {checkingSimilarity && <span className="text-[10px] text-zinc-400 animate-pulse">A verificar similaridade...</span>}
+            </div>
             <textarea 
               id="abstract" 
               name="abstract" 
@@ -41,6 +173,9 @@ export default function UploadArtigoPage() {
               placeholder="Descreva brevemente o conteúdo do artigo..."
               className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               required
+              value={formData.abstract}
+              onChange={(e) => setFormData(prev => ({ ...prev, abstract: e.target.value }))}
+              onBlur={handleBlur}
             />
           </div>
 

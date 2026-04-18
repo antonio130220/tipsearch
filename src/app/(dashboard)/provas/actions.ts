@@ -95,3 +95,23 @@ export async function getDownloadUrl(filePath: string) {
   const { data } = await supabase.storage.from('provas').createSignedUrl(filePath, 3600)
   return data?.signedUrl
 }
+
+export async function checkDuplicateProva(disciplina: string, tipo: string, semestre: number, ano_letivo: string) {
+  const supabase = createClient()
+  
+  const { data, error } = await supabase
+    .from('provas')
+    .select('id, disciplina, tipo, ano_letivo')
+    .eq('disciplina', disciplina)
+    .eq('tipo', tipo)
+    .eq('semestre', semestre)
+    .eq('ano_letivo', ano_letivo)
+    .limit(1)
+
+  if (error) {
+    console.error('Error checking duplicate prova:', error)
+    return null
+  }
+
+  return data.length > 0 ? data[0] : null
+}

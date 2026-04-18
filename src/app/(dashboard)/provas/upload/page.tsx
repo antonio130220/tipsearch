@@ -1,20 +1,41 @@
 'use client'
-
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { uploadProva } from "../actions"
-import { ArrowLeft, Upload } from "lucide-react"
+import { uploadProva, checkDuplicateProva } from "../actions"
+import { ArrowLeft, Upload, AlertCircle, ExternalLink } from "lucide-react"
 import Link from "next/link"
-import { useState } from "react"
+import { useState, useRef } from "react"
 
 export default function UploadProvaPage() {
   const [loading, setLoading] = useState(false)
+  const [duplicate, setDuplicate] = useState<{id: string, disciplina: string, tipo: string, ano_letivo: string} | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handlePreSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
     setLoading(true)
-    // Deixamos o form action normal lidar com o redirect, 
-    // ou usamos handle manual se quisermos catch errors
+
+    const formData = new FormData(e.currentTarget)
+    const disciplina = formData.get('disciplina') as string
+    const tipo = formData.get('tipo') as string
+    const semestre = parseInt(formData.get('semestre') as string)
+    const ano_letivo = formData.get('ano_letivo') as string
+
+    // Verificar duplicados exatos
+    const existing = await checkDuplicateProva(disciplina, tipo, semestre, ano_letivo)
+
+    if (existing && !duplicate) {
+      setDuplicate(existing)
+      setLoading(false)
+      return
+    }
+
+    // Se não houver duplicado ou o utilizador decidiu continuar
+    if (formRef.current) {
+      const actionData = new FormData(formRef.current)
+      await uploadProva(actionData)
+    }
   }
 
   return (
@@ -31,7 +52,48 @@ export default function UploadProvaPage() {
         </div>
       </header>
 
-      <form action={uploadProva} onSubmit={handleSubmit} className="space-y-6 bg-white p-8 border rounded-xl shadow-sm">
+      {duplicate && (
+        <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex gap-4">
+          <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-semibold text-amber-900">
+                Já existe uma prova com estes dados:
+              </p>
+              <p className="text-sm text-amber-800">
+                {duplicate.disciplina} ({duplicate.tipo}) - {duplicate.ano_letivo}
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" size="sm" asChild className="bg-white border-amber-200 text-amber-900 hover:bg-amber-100">
+                <Link href={`/provas/${duplicate.id}`} target="_blank" className="flex items-center gap-2">
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Ver existente
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setDuplicate(null)} className="text-amber-700 hover:bg-amber-100">
+                Cancelar
+              </Button>
+              <Button 
+                variant="default" 
+                size="sm" 
+                className="bg-amber-600 hover:bg-amber-700 text-white"
+                onClick={() => {
+                  if (formRef.current) {
+                    setLoading(true)
+                    const actionData = new FormData(formRef.current)
+                    uploadProva(actionData)
+                  }
+                }}
+              >
+                Continuar mesmo assim
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <form ref={formRef} onSubmit={handlePreSubmit} className="space-y-6 bg-white p-8 border rounded-xl shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="disciplina">Disciplina</Label>

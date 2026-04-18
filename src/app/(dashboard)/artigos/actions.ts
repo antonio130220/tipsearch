@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { generateEmbedding } from '@/lib/gemini'
 
 export async function uploadArtigo(formData: FormData) {
   const supabase = createClient()
@@ -60,9 +61,31 @@ export async function uploadArtigo(formData: FormData) {
 
 export async function aprovarArtigo(id: string) {
   const supabase = createClient()
+  
+  // 1. Obter título e abstract para gerar o embedding
+  const { data: artigo, error: fetchError } = await supabase
+    .from('artigos')
+    .select('titulo, abstract')
+    .eq('id', id)
+    .single()
+
+  if (fetchError || !artigo) throw new Error('Erro ao encontrar artigo para aprovar')
+
+  // 2. Gerar embedding
+  let embedding = null;
+  try {
+    embedding = await generateEmbedding(`${artigo.titulo} ${artigo.abstract}`)
+  } catch (err) {
+    console.error('Falha ao gerar embedding:', err)
+  }
+
+  // 3. Atualizar registo
   const { error } = await supabase
     .from('artigos')
-    .update({ aprovado: true })
+    .update({ 
+      aprovado: true,
+      embedding: embedding
+    })
     .eq('id', id)
 
   if (error) throw new Error('Erro ao aprovar artigo')
@@ -83,4 +106,23 @@ export async function getDownloadUrl(filePath: string) {
   const supabase = createClient()
   const { data } = await supabase.storage.from('artigos').createSignedUrl(filePath, 3600)
   return data?.signedUrl
+}
+
+export async function checkDuplicateArtigo(titulo: string) {
+  const supabase = createClient()
+  // Comparação case-insensitive e ignora espaços extra
+  const cleanTitulo = titulo.trim().toLowerCase()
+  
+  const { data, error } = await supabase
+    .from('artigos')
+    .select('id, titulo')
+    .ilike('titulo', cleanTitulo)
+    .limit(1)
+
+  if (error) {
+    console.error('Error checking duplicate artigo:', error)
+    return null
+  }
+
+  return data.length > 0 ? data[0] : null
 }

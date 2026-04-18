@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Plus, Filter, Search, FileText, Calendar, GraduationCap } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { HoverGlow } from "@/components/ui/hover-glow";
 
 export default async function ProvasPage({
   searchParams,
@@ -107,29 +108,30 @@ export default async function ProvasPage({
       {provas && provas.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {provas.map((prova) => (
-            <Link 
-              key={prova.id} 
-              href={`/provas/${prova.id}`}
-              className="group rounded-lg border bg-white p-6 hover:border-zinc-400 transition-all cursor-pointer shadow-sm"
-            >
-              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md border bg-zinc-50 text-zinc-600 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
-                <FileText className="h-5 w-5" />
-              </div>
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400">{prova.tipo} • {prova.semestre}º Sem</span>
-                <h3 className="font-semibold text-zinc-900 line-clamp-1">{prova.disciplina}</h3>
-              </div>
-              <div className="mt-4 flex items-center gap-4 text-xs text-zinc-500">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  {prova.ano_letivo}
+            <HoverGlow key={prova.id} color="indigo" className="h-full">
+              <Link 
+                href={`/provas/${prova.id}`}
+                className="group flex flex-col h-full rounded-lg border bg-white p-6 transition-colors cursor-pointer shadow-sm hover:border-zinc-300"
+              >
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-md border bg-zinc-50 text-zinc-600 group-hover:bg-zinc-900 group-hover:text-white transition-colors">
+                  <FileText className="h-5 w-5" />
                 </div>
-                <div className="flex items-center gap-1">
-                  <GraduationCap className="h-3 w-3" />
-                  Universidade
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 whitespace-nowrap overflow-hidden">{prova.tipo} • {prova.semestre}º Sem</span>
+                  <h3 className="font-semibold text-zinc-900 line-clamp-2 break-words">{prova.disciplina}</h3>
                 </div>
-              </div>
-            </Link>
+                <div className="mt-auto pt-4 flex items-center gap-4 text-xs text-zinc-500">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {prova.ano_letivo}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <GraduationCap className="h-3 w-3" />
+                    <span className="truncate">Universidade</span>
+                  </div>
+                </div>
+              </Link>
+            </HoverGlow>
           ))}
         </div>
       ) : (
